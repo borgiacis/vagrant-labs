@@ -1,0 +1,56 @@
+#!/bin/bash
+
+if [ -f /etc/default/netconsole ]; then
+	. /etc/default/netconsole
+else
+	# hardcoded defaults
+	NETCONSOLE_IF="auto"
+	NETCONSOLE_SRC_IP="no"
+	NETCONSOLE_SRC_PORT=
+	NETCONSOLE_DST_IP="broadcast"
+	NETCONSOLE_DST_PORT=6666
+	NETCONSOLE_DST_MAC=""
+fi
+
+
+# clear all dynamic configuration if exists
+find /sys/kernel/config/netconsole -maxdepth 1 -type d -delete 2>/dev/null
+# unload module if it was already loaded
+rmmod netconsole
+# load configfs and netconsole module
+modprobe configfs
+modprobe netconsole
+
+# check whether configfs was already mounted
+cat /proc/mounts| egrep -q '^configfs /sys/kernel/config configfs'
+if [ $? -gt 0 ]; then
+	mount none -t configfs /sys/kernel/config
+fi
+
+interface="$NETCONSOLE_IF"
+src_ip="$NETCONSOLE_SRC_IP"
+src_port="$NETCONSOLE_SRC_PORT"
+dst_port=$NETCONSOLE_DST_PORT
+dst_ip="$NETCONSOLE_DST_IP"
+	if [ "$NETCONSOLE_DST_MAC" == "auto" ] || [ "$NETCONSOLE_DST_MAC" == "AUTO" ]; then
+		# determine MAC address of destination
+		dst_mac=`arping -w 3 -c 1 -I $interface $dst_ip 2>/dev/null| egrep "^Unicast reply from $dst_ip"| awk '{print $5}' 2>/dev/null| tr -d '[]'`
+	else
+		dst_mac="$NETCONSOLE_DST_MAC"
+	fi
+# apply
+target="$interface-$src_ip"
+mkdir /sys/kernel/config/netconsole/$target
+echo "$interface" > /sys/kernel/config/netconsole/$target/dev_name
+if [ "$src_ip" ]; then
+	echo "$src_ip" > /sys/kernel/config/netconsole/$target/local_ip
+fi
+if [ "$src_port" ]; then
+        echo "$src_port" > /sys/kernel/config/netconsole/$target/local_port
+fi
+    echo "$dst_ip" > /sys/kernel/config/netconsole/$target/remote_ip
+    echo "$dst_port" > /sys/kernel/config/netconsole/$target/remote_port
+if [ "$dst_mac" ]; then
+        echo "$dst_mac" > /sys/kernel/config/netconsole/$target/remote_mac
+fi
+    echo "1" > /sys/kernel/config/netconsole/$target/enabled

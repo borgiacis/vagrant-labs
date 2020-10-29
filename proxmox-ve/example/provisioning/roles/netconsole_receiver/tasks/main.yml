@@ -1,0 +1,22 @@
+---
+# tasks file for netconsole-receiver
+
+
+- name: Place the netconsole.conf.j2 template in the /etc/rsyslog.d/netconsole.conf
+  template:
+    src: templates/netconsole.j2
+    dest: /etc/rsyslog.d/netconsole.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "restart rsyslog"
+
+- name: Place rsyslog.j2 logrotate file in /etc/logrotate.d/rsyslog
+  template:
+    src: templates/rsyslog.j2
+    dest: /etc/logrotate.d/rsyslog
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "restart rsyslog"
+

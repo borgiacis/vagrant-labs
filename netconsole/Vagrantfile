@@ -1,0 +1,60 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# https://www.vagrantup.com/docs/provisioning/ansible_intro
+# https://www.middlewareinventory.com/blog/vagrant-ansible-example/
+# https://github.com/borgiacis/ansible-bup/blob/master/Learn-Ansible/Chapter06/lemp-multi/Vagrantfile
+
+
+API_VERSION = "2"
+BOX_NAME_CLIENT       = "debian/stretch64"
+BOX_NAME_RECEIVER     = "centos/7"
+BOX_HOSTNAME_CLIENT   = "debian9"
+BOX_HOSTNAME_RECEIVER = "centos7"
+BOX_IP_CLIENT         = "172.31.255.201"
+BOX_IP_RECEIVER       = "172.31.255.200"
+PRIVATE_KEY           = "~/.ssh/vagrant"
+PUBLIC_KEY            = "~/.ssh/vagrant.pub"
+
+Vagrant.configure(API_VERSION) do |config|
+
+  config.vm.define :client do |client|  
+    client.vm.box = BOX_NAME_CLIENT
+    client.vm.network "private_network", ip: BOX_IP_CLIENT
+    client.vm.host_name = BOX_HOSTNAME_CLIENT 
+    client.ssh.insert_key = false
+    client.ssh.private_key_path = [PRIVATE_KEY, "~/.vagrant.d/insecure_private_key"]
+    client.vm.provision "file", source: PUBLIC_KEY, destination: "~/.ssh/authorized_keys"
+    client.vm.provision "ansible" do |ansible|
+      ansible.playbook = "provisioning/client.yml"
+      ansible.extra_vars = {
+        netconsole_client: {
+          receiver_ip: "172.31.255.200",
+          receiver_port: "514",
+        }
+      }
+    end
+  end
+
+  config.vm.define :receiver do |receiver|  
+    receiver.vm.box = BOX_NAME_RECEIVER
+    receiver.vm.network "private_network", ip: BOX_IP_RECEIVER
+    receiver.vm.host_name = BOX_HOSTNAME_RECEIVER 
+    receiver.ssh.insert_key = false
+    receiver.ssh.private_key_path = [PRIVATE_KEY, "~/.vagrant.d/insecure_private_key"]
+    receiver.vm.provision "file", source: PUBLIC_KEY, destination: "~/.ssh/authorized_keys"
+    receiver.vm.provision "ansible" do |ansible|
+      ansible.playbook = "provisioning/receiver.yml"
+    end
+  end
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = "2024"
+    v.cpus = "2"
+  end
+
+  config.vm.provider "vmware_fusion" do |v|
+    v.vmx["memsize"] = "2024"
+    v.vmx["numvcpus"] = "2"
+  end
+
+end

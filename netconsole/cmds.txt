@@ -1,0 +1,37 @@
+# https://www.kernel.org/doc/Documentation/networking/netconsole.txt
+
+Red Hat has netconsole init script. However, under Debian / Ubuntu Linux, you need to manually configure netconsole. Type the following command to start netconsole by loading kernel netconsole module, enter:
+
+# modprobe netconsole 6666@172.31.255.201/eth1,514@172.31.255.200/08:00:27:23:77:60
+
+You can add above modprobe line to /etc/rc.local to load module automatically. 
+Another recommend option is create /etc/modprobe.d/netconsole file and append following text:
+
+# echo 'options netconsole modprobe netconsole 6666@172.31.255.201/eth1,514@172.31.255.200/08:00:27:23:77:60 '> /etc/modprobe.d/netconsole
+
+
+logger -p kern.alert "test message" # this apparently talks to syslog only
+echo "test message" >/dev/kmsg
+
+https://feeding.cloud.geek.nz/posts/logging-kernel-messages-over-network/
+https://michael.stapelberg.ch/posts/2013-09-16-remote_syslog/
+https://fishilico.github.io/generic-config/sysadmin/netconsole.html
+https://www.kernel.org/doc/Documentation/filesystems/configfs/configfs.txt
+
+modprobe configfs
+
+
+
+The priority value is calculated using the following formula:
+Priority = Facility * 8 + Level
+
+The list of severity Levels:
+
+0       Emergency: system is unusable
+1       Alert: action must be taken immediately
+2       Critical: critical conditions
+3       Error: error conditions
+4       Warning: warning conditions
+5       Notice: normal but significant condition
+6       Informational: informational messages
+7       Debug: debug-level messages 

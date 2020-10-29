@@ -1,0 +1,60 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# pve user: admin
+# pve password: vagrant
+
+API_VERSION = "2"
+BOX_NAME_CLIENT       = "../proxmox-ve-amd64-virtualbox.box"
+BOX_NAME_RECEIVER     = "centos/7"
+BOX_HOSTNAME_CLIENT   = "pve"
+BOX_HOSTNAME_RECEIVER = "centos7"
+BOX_IP_CLIENT         = "172.31.255.201"
+BOX_IP_RECEIVER       = "172.31.255.200"
+PRIVATE_KEY           = "~/.ssh/vagrant"
+PUBLIC_KEY            = "~/.ssh/vagrant.pub"
+
+Vagrant.configure(API_VERSION) do |config|
+
+  config.vm.define :client do |client|  
+    client.vm.box = BOX_NAME_CLIENT
+    client.vm.provider :virtualbox do |vb|
+      vb.linked_clone = true
+      vb.memory = 2048
+      vb.cpus = 4
+      vb.customize ['modifyvm', :id, '--nested-hw-virt', 'on']
+    end
+    client.vm.network :private_network, ip: BOX_IP_CLIENT, auto_config: false
+    client.vm.provision :shell, path: 'provision.sh', args: BOX_IP_CLIENT
+    client.vm.provision :shell, path: 'provision-pveproxy-certificate.sh', args: BOX_IP_CLIENT
+    client.vm.provision :shell, path: 'provision-containers.sh', args: BOX_IP_CLIENT
+    client.vm.provision :shell, path: 'summary.sh', args: BOX_IP_CLIENT
+    client.vm.provision "ansible" do |ansible|
+      ansible.playbook = "provisioning/client.yml"
+      ansible.extra_vars = {
+        netconsole_client: {
+          receiver_ip: "172.31.255.200",
+          receiver_port: "514",
+        }
+      }
+    end
+  end
+
+  config.vm.define :receiver do |receiver|  
+    receiver.vm.box = BOX_NAME_RECEIVER
+    receiver.vm.provider :virtualbox do |vb|
+      vb.linked_clone = true
+      vb.memory = 2048
+      vb.cpus = 2
+      vb.customize ['modifyvm', :id, '--nested-hw-virt', 'on']
+    end
+    receiver.vm.network "private_network", ip: BOX_IP_RECEIVER
+    receiver.vm.host_name = BOX_HOSTNAME_RECEIVER 
+    receiver.ssh.insert_key = false
+    receiver.ssh.private_key_path = [PRIVATE_KEY, "~/.vagrant.d/insecure_private_key"]
+    receiver.vm.provision "file", source: PUBLIC_KEY, destination: "~/.ssh/authorized_keys"
+    receiver.vm.provision "ansible" do |ansible|
+      ansible.playbook = "provisioning/receiver.yml"
+    end
+  end  
+
+end

@@ -1,0 +1,9 @@
+---
+# handlers file for netconsole
+
+- name: Restart the rsyslog when changes have been made 
+  service:
+    name: rsyslog
+    state: restarted
+  listen: "restart rsyslog"
+    

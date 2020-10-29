@@ -1,0 +1,13 @@
+# This file is managed by ansible
+# netconsole-receiver/templates/rsyslog.j2
+
+/var/log/netconsole-crashlogs/*.log
+{
+        rotate 30
+        daily
+        missingok
+        notifempty
+        delaycompress
+        compress
+}
+

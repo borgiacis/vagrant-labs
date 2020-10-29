@@ -1,0 +1,15 @@
+---
+# handlers file for netconsole-client
+- name: Restart and enable netconsole for systemD service.
+  service:
+    name: netconsole.service
+    state: restarted
+    enabled: yes
+  listen: 'restart netconsole'
+
+- name: Restart and enable netconsole for sysVinit service.
+  sysvinit:
+    name: netconsole
+    state: restarted
+    enabled: yes
+  listen: 'restart sysvinit'

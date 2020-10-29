@@ -1,0 +1,24 @@
+# This file is managed by ansible
+# netconsole-receiver/templates/netconsole.conf.j2
+### MODULES ###
+
+$ModLoad imklog # reads kernel messages (the same are read from journald)
+
+# Provides UDP syslog reception
+$ModLoad imudp
+$UDPServerRun 514
+
+### TEMPLATE ###
+
+# Set mode for new files and directories
+$DirCreateMode 0700
+$FileCreateMode 0644
+
+$template DynaFile,"/var/log/netconsole-crashlogs/%HOSTNAME%.log"
+*.* ?DynaFile
+
+#### RULES ####
+
+# Log all kernel messages to the console.
+# Logging much else clutters up the screen.
+kern.*                                                 /var/log/messages

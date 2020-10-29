@@ -1,0 +1,56 @@
+---
+# The following steps create a systemd netconsole.service 
+# This to start and enable netconsole as a service because the build in service does 
+# not enable the netconsole service it only starts it.
+
+- name: place the default netconsole template in the /etc/default/ directory
+  template:
+    src: templates/default-netconsole.j2
+    dest: /etc/default/netconsole
+    owner: root
+    group: root
+    mode: '0644'
+  when: not (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "6")
+
+  
+- name: place the load_netconsole script in the /usr/bin/local/ directory
+  template:
+    src: templates/load_netconsole.sh.j2
+    dest: /usr/bin/load_netconsole.sh
+    owner: root
+    group: root
+    mode:  '0755'
+  when: not (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "6")
+
+- name: place the netconsole.service in the /usr/lib/systemd/system/ directory
+  template:
+    src: templates/netconsole.service.j2
+    dest: /usr/lib/systemd/system/netconsole.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_facts['os_family'] == "RedHat" and ansible_facts['distribution_major_version']|int > 6
+  notify: "restart netconsole"
+
+- name: place the netconsole.service in the /etc/systemd/system/ directory for Debian
+  template:
+    src: templates/netconsole.service.j2
+    dest: /etc/systemd/system/netconsole.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_facts['os_family'] == "Debian"
+  notify: "restart netconsole"
+  
+# This is the configuration for CentOS6 sysVinit system netconsole.service
+
+- name: place the default netconsole template in the /etc/sysconfig/netconsole
+  template:
+    src: templates/netconsole.j2
+    dest: /etc/sysconfig/netconsole
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "6"
+  notify: "restart sysvinit"
+

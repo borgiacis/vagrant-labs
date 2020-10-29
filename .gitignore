@@ -1,0 +1,7 @@
+# General
+.vagrant/
+*.log
+.*
+!/.gitignore
+### Vagrant Patch ###
+*.box
